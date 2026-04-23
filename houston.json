@@ -26,6 +26,11 @@
       "badge": "activity"
     },
     {
+      "id": "routines",
+      "label": "Routines",
+      "builtIn": "routines"
+    },
+    {
       "id": "job-description",
       "label": "Job Description",
       "builtIn": "job-description"
