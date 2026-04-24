@@ -3,9 +3,9 @@
 // Access React via window.Houston.React. Export via window.__houston_bundle__.
 //
 // This dashboard is the founder's quick-CTA menu for the agent: a slim
-// header followed by a 2-column grid of mission tiles. Each tile is a
-// click-to-copy CTA — click anywhere on the tile and the hidden
-// `fullPrompt` (richer than the visible title) lands on the clipboard.
+// header followed by a 2-column grid of mission tiles. Each tile fires
+// the hidden `fullPrompt` (richer than the visible title) straight into
+// the agent's chat via the host-injected `sendMessage(text)` prop.
 //
 // Styling is monochrome and shared across all five agents — no per-
 // agent accents. Colors are applied via an injected <style> block so
@@ -148,6 +148,7 @@
     ".hv-dash .hv-tile:hover{border-color:#0f172a;box-shadow:0 6px 20px -8px rgba(15,23,42,0.12);transform:translateY(-1px);}" +
     ".hv-dash .hv-tile:active{transform:translateY(0);box-shadow:0 1px 2px rgba(15,23,42,0.04);}" +
     ".hv-dash .hv-tile:focus-visible{outline:2px solid #0f172a;outline-offset:2px;}" +
+    ".hv-dash .hv-tile[disabled]{opacity:0.85;cursor:default;}" +
     // Tile parts
     ".hv-dash .hv-eyebrow{display:flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:0.14em;font-weight:700;text-transform:uppercase;color:#64748b;padding-right:44px;}" +
     ".hv-dash .hv-eyebrow-sep{color:#cbd5e1;font-weight:500;}" +
@@ -155,28 +156,28 @@
     ".hv-dash .hv-blurb{font-size:13px;color:#475569;line-height:1.5;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}" +
     ".hv-dash .hv-tile-foot{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:#94a3b8;}" +
     ".hv-dash .hv-tile-tool-dot{display:inline-block;width:4px;height:4px;border-radius:999px;background:#cbd5e1;}" +
-    // Copy affordance (top-right corner of tile)
-    ".hv-dash .hv-copy-chip{position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;border:1px solid #e2e8f0;background:#ffffff;color:#94a3b8;transition:all 160ms ease-out;}" +
-    ".hv-dash .hv-tile:hover .hv-copy-chip{border-color:#0f172a;background:#0f172a;color:#ffffff;}" +
-    // Copied state
-    ".hv-dash .hv-tile-copied{border-color:#0f172a;background:#0f172a;color:#ffffff;}" +
-    ".hv-dash .hv-tile-copied .hv-title{color:#ffffff;}" +
-    ".hv-dash .hv-tile-copied .hv-blurb{color:#cbd5e1;}" +
-    ".hv-dash .hv-tile-copied .hv-eyebrow{color:#cbd5e1;}" +
-    ".hv-dash .hv-tile-copied .hv-eyebrow-sep{color:#64748b;}" +
-    ".hv-dash .hv-tile-copied .hv-tile-foot{color:#94a3b8;}" +
-    ".hv-dash .hv-tile-copied .hv-copy-chip{border-color:#ffffff;background:#ffffff;color:#0f172a;}" +
+    // Send affordance (top-right corner of tile)
+    ".hv-dash .hv-send-chip{position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;border:1px solid #e2e8f0;background:#ffffff;color:#94a3b8;transition:all 160ms ease-out;}" +
+    ".hv-dash .hv-tile:hover .hv-send-chip{border-color:#0f172a;background:#0f172a;color:#ffffff;}" +
+    // Sent state
+    ".hv-dash .hv-tile-sent{border-color:#0f172a;background:#0f172a;color:#ffffff;}" +
+    ".hv-dash .hv-tile-sent .hv-title{color:#ffffff;}" +
+    ".hv-dash .hv-tile-sent .hv-blurb{color:#cbd5e1;}" +
+    ".hv-dash .hv-tile-sent .hv-eyebrow{color:#cbd5e1;}" +
+    ".hv-dash .hv-tile-sent .hv-eyebrow-sep{color:#64748b;}" +
+    ".hv-dash .hv-tile-sent .hv-tile-foot{color:#94a3b8;}" +
+    ".hv-dash .hv-tile-sent .hv-send-chip{border-color:#ffffff;background:#ffffff;color:#0f172a;}" +
     "";
 
   // ── Inline icons (heroicons-outline paths) ──────────────────
   var ICON_PATHS = {
-    copy:
-      "M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75",
+    send:
+      "M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5",
     check: "m4.5 12.75 6 6 9-13.5",
   };
 
   function Icon(name, size) {
-    var d = ICON_PATHS[name] || ICON_PATHS.copy;
+    var d = ICON_PATHS[name] || ICON_PATHS.send;
     var s = size || 14;
     return h(
       "svg",
@@ -195,40 +196,36 @@
     );
   }
 
-  // ── Clipboard hook ───────────────────────────────────────────
-  function useClipboard() {
+  // ── Send hook ────────────────────────────────────────────────
+  // Fires the prompt into the agent's chat via the host-injected
+  // `sendMessage(text)` prop (see experience-renderer.tsx). Keeps a
+  // 1.4s "sent" flash on the tile so the click feels anchored.
+  function useSend(sendMessage) {
     var s = useState({ idx: null, at: 0 });
     var state = s[0];
     var setState = s[1];
-    var copy = useCallback(function (text, idx) {
+    var send = useCallback(function (text, idx) {
       if (!text) return;
-      function flash() {
-        setState({ idx: idx, at: Date.now() });
-        setTimeout(function () {
-          setState(function (cur) {
-            return cur.idx === idx ? { idx: null, at: 0 } : cur;
-          });
-        }, 1400);
+      if (typeof sendMessage !== "function") {
+        console.warn(
+          "[seo-content dashboard] sendMessage prop missing — tile click is a no-op.",
+        );
+        return;
       }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(flash).catch(function () {
-          try {
-            var ta = document.createElement("textarea");
-            ta.value = text;
-            ta.style.position = "fixed";
-            ta.style.top = "-9999px";
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
-            flash();
-          } catch (e) {
-            /* silent */
-          }
+      try {
+        sendMessage(text);
+      } catch (e) {
+        console.error("[seo-content dashboard] sendMessage threw:", e);
+        return;
+      }
+      setState({ idx: idx, at: Date.now() });
+      setTimeout(function () {
+        setState(function (cur) {
+          return cur.idx === idx ? { idx: null, at: 0 } : cur;
         });
-      }
-    }, []);
-    return { copiedIdx: state.idx, copy: copy };
+      }, 1400);
+    }, [sendMessage]);
+    return { sentIdx: state.idx, send: send };
   }
 
   function payloadFor(uc) {
@@ -289,24 +286,25 @@
   function Tile(props) {
     var uc = props.useCase;
     var idx = props.idx;
-    var isCopied = props.copiedIdx === idx;
-    var onCopy = props.onCopy;
+    var isSent = props.sentIdx === idx;
+    var onSend = props.onSend;
 
     return h(
       "button",
       {
         type: "button",
+        disabled: isSent || undefined,
         onClick: function () {
-          onCopy(payloadFor(uc), idx);
+          onSend(payloadFor(uc), idx);
         },
-        className: "hv-tile" + (isCopied ? " hv-tile-copied" : ""),
-        "aria-label": "Copy prompt: " + (uc.title || ""),
+        className: "hv-tile" + (isSent ? " hv-tile-sent" : ""),
+        "aria-label": "Start chat: " + (uc.title || ""),
       },
-      // Copy chip (top-right)
+      // Send chip (top-right)
       h(
         "span",
-        { className: "hv-copy-chip", "aria-hidden": "true" },
-        Icon(isCopied ? "check" : "copy", 14),
+        { className: "hv-send-chip", "aria-hidden": "true" },
+        Icon(isSent ? "check" : "send", 14),
       ),
       // Eyebrow: category (· tool)
       h(
@@ -328,12 +326,12 @@
       uc.blurb
         ? h("p", { className: "hv-blurb" }, uc.blurb)
         : null,
-      // Foot — copied feedback only (keeps base layout stable)
-      isCopied
+      // Foot — sent feedback only (keeps base layout stable)
+      isSent
         ? h(
             "div",
             { className: "hv-tile-foot" },
-            h("span", null, "Copied · paste into a new mission"),
+            h("span", null, "Sent · see Activity tab"),
           )
         : null,
     );
@@ -365,8 +363,14 @@
   }
 
   // ── Dashboard (root) ────────────────────────────────────────
-  function Dashboard() {
-    var clipboard = useClipboard();
+  // Props (injected by Houston at mount — see
+  // app/src/components/shell/experience-renderer.tsx):
+  //   - sendMessage(text: string): fires a chat message into the
+  //     agent's "primary" session. Surfaces on the Activity tab.
+  //   - readFile / writeFile / listFiles / agent / agentDef (unused here)
+  function Dashboard(props) {
+    var sendMessage = props && props.sendMessage;
+    var sender = useSend(sendMessage);
     var useCases = AGENT.useCases || [];
 
     var body;
@@ -413,7 +417,7 @@
                 letterSpacing: "0.02em",
               },
             },
-            "Click any tile to copy the prompt",
+            "Click any tile to start a conversation",
           ),
         ),
         // Grid
@@ -425,8 +429,8 @@
               key: i,
               useCase: uc,
               idx: i,
-              copiedIdx: clipboard.copiedIdx,
-              onCopy: clipboard.copy,
+              sentIdx: sender.sentIdx,
+              onSend: sender.send,
             });
           }),
         ),
